@@ -1,6 +1,7 @@
 from django.conf import settings
 from introspection.inspector import inspect
 from terminal.commands import Command, rprint
+import json
 
 
 def inspectapp(request, cmd_args):
@@ -65,14 +66,18 @@ def setting(request, cmd_args):
         return "Not enough arguments: ex: setting apps"
     if cmd_args[0] == "apps":
         return setting_apps()
-    if cmd_args[0] in settings:
-        return settings[cmd_args[0]]
-    a = "arguments"
-    if len(cmd_args) == 1:
-        a = "argument"
-    cmd_argslist = " ".join(cmd_args)
-    err = "Unknown " + a + " " + cmd_argslist
-    return err
+    s = getattr(settings, cmd_args[0], None)
+    if s is None:
+        return "Setting " + cmd_args[0] + " not found"
+    else:
+        msg = ""
+        try:
+            msg = json.dumps(s, indent=2).replace(
+                " ", "&nbsp;").replace("\n", "<br />")
+        except:
+            msg = str(s)
+        rprint(msg)
+        return None
 
 
 c0 = Command("setting", setting, "Show a setting: ex: setting apps")
