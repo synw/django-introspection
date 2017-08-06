@@ -53,7 +53,7 @@ def inspectapp(request, cmd_args):
 
 
 def setting_apps():
-    apps = inspect.apps()
+    apps = inspect.appnames
     rprint("Found", len(apps), "apps")
     for app in apps:
         rprint(app)
