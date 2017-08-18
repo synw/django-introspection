@@ -1,5 +1,10 @@
+from __future__ import print_function
 from django.conf import settings
 from django.apps import apps as APPS
+from django.utils.html import strip_tags
+TERM = "terminal" in settings.INSTALLED_APPS
+if TERM:
+    from terminal.commands import rprint as RPRINT
 
 
 class Inspector:
@@ -8,6 +13,62 @@ class Inspector:
 
     def __init__(self):
         self.allowed_apps = self.apps()
+
+    def scanapp(self, path=None, term=False):
+        global TERM
+        global RPRINT
+        rprint = prints
+        if term is True:
+            if TERM is True:
+                rprint = RPRINT
+            else:
+                return "Terminal is not installed: can not remote print"
+        if path == None:
+            return "A path is required: ex: auth.User"
+        has_model = "." in path
+        if has_model is False:
+            appname = path
+            stats, err = inspect.app(appname)
+            if err is not None:
+                return err
+            for modelname in stats:
+                rprint("<b>" + modelname + "</b>", ": found",
+                       stats[modelname], "instances")
+            return None
+        else:
+            path = path
+            s = path.split(".")
+            appname = s[0]
+            modelname = s[1]
+            infos, err = inspect.model(appname, modelname)
+            if err is not None:
+                return err
+            rprint("Found", len(infos["fields"]), "fields:")
+            for field in infos["fields"]:
+                name = "<b>" + field["name"] + "</b>"
+                ftype = field["class"]
+                rel = field["related"]
+                msg = name + " " + ftype
+                if rel is not None:
+                    msg = msg + " with related name " + rel
+                rprint(msg)
+            numrels = len(infos["relations"])
+            if numrels > 0:
+                relstr = "relations"
+                if numrels == 1:
+                    relstr = "relation"
+                rprint("Found", len(infos["relations"]),
+                       "external", relstr, ":")
+                for rel in infos["relations"]:
+                    name = "<b>" + rel["field"] + "</b>"
+                    relname = rel["related_name"]
+                    relfield = rel["relfield"]
+                    relstr = ""
+                    if relname is not None:
+                        relstr = "with related name " + relname
+                    rprint(name, "from", relfield, rel["type"], relstr)
+            rprint("Found", infos["count"], "instances of", modelname)
+        return None
 
     def apps(self):
         apps = []
@@ -128,3 +189,10 @@ class Inspector:
 
 
 inspect = Inspector()
+
+
+def prints(*args):
+    msg = ""
+    for arg in args:
+        msg += strip_tags(arg) + " "
+    print(msg)
