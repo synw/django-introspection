@@ -14,7 +14,7 @@ Clone and add `"introspection",` to installed apps
    # get a list of apps objects:
    apps = inspect.apps()
    # get a list of models objects:
-   models, err = inspect("auth")
+   models, err = inspect.models("auth")
    
    # get info about an app:
    app_info, err = inspect.app("auth")
