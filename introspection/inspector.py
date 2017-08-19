@@ -28,7 +28,7 @@ class Inspector:
         has_model = "." in path
         if has_model is False:
             appname = path
-            stats, err = inspect.app(appname)
+            stats, err = self.app(appname)
             if err is not None:
                 return err
             for modelname in stats:
@@ -40,7 +40,7 @@ class Inspector:
             s = path.split(".")
             appname = s[0]
             modelname = s[1]
-            infos, err = inspect.model(appname, modelname)
+            infos, err = self.model(appname, modelname)
             if err is not None:
                 return err
             rprint("Found", len(infos["fields"]), "fields:")
