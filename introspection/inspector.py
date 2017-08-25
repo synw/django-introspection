@@ -2,6 +2,7 @@ from __future__ import print_function
 from django.conf import settings
 from django.apps import apps as APPS
 from django.utils.html import strip_tags
+from blessings import Terminal
 TERM = "terminal" in settings.INSTALLED_APPS
 if TERM:
     from terminal.commands import rprint as RPRINT
@@ -10,6 +11,7 @@ if TERM:
 class Inspector:
     allowed_apps = []
     appnames = []
+    p = Terminal()
 
     def __init__(self):
         self.allowed_apps = self.apps()
@@ -33,7 +35,7 @@ class Inspector:
                 return err
             for modelname in stats:
                 rprint("<b>" + modelname + "</b>", ": found",
-                       stats[modelname], "instances")
+                       self.p.bold(stats[modelname] + " instances"))
             return None
         else:
             path = path
@@ -43,9 +45,14 @@ class Inspector:
             infos, err = self.model(appname, modelname)
             if err is not None:
                 return err
-            rprint("Found", len(infos["fields"]), "fields:")
+            title("Fields")
+            rprint("# Found", self.p.bold(
+                str(len(infos["fields"])) + " fields:"))
             for field in infos["fields"]:
-                name = "<b>" + field["name"] + "</b>"
+                if TERM is True:
+                    name = "<b>" + field["name"] + "</b>"
+                else:
+                    name = self.p.bold_green(field["name"])
                 ftype = field["class"]
                 rel = field["related"]
                 msg = name + " " + ftype
@@ -57,17 +64,23 @@ class Inspector:
                 relstr = "relations"
                 if numrels == 1:
                     relstr = "relation"
-                rprint("Found", len(infos["relations"]),
-                       "external", relstr, ":")
+                title("Relations")
+                rprint("# Found", self.p.bold(str(len(infos["relations"])) +
+                                              " external " + relstr), ":")
                 for rel in infos["relations"]:
-                    name = "<b>" + rel["field"] + "</b>"
+                    if TERM is True:
+                        name = "<b>" + rel["field"] + "</b>"
+                    else:
+                        name = self.p.bold_green(rel["field"])
                     relname = rel["related_name"]
                     relfield = rel["relfield"]
                     relstr = ""
                     if relname is not None:
-                        relstr = "with related name " + relname
+                        relstr = "with related name " + self.p.green(relname)
                     rprint(name, "from", relfield, rel["type"], relstr)
-            rprint("Found", infos["count"], "instances of", modelname)
+            title("Instances")
+            rprint("# Found", self.p.bold(
+                str(infos["count"]) + " instances of " + modelname))
         return None
 
     def apps(self):
@@ -189,6 +202,12 @@ class Inspector:
 
 
 inspect = Inspector()
+
+
+def title(name):
+    print("========================================================")
+    print("                     " + name)
+    print("========================================================")
 
 
 def prints(*args):
