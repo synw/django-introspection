@@ -4,9 +4,7 @@ Introspection tools for Django
 
 ## Install
 
-Depedencies: `pip install blessings`
-
-Clone and add `"introspection",` to installed apps
+`pip install django-introspection`
 
 ## Usage
 
