@@ -12,6 +12,6 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         path = options["path"]
         err = inspect.scanapp(path)
-        if err != None:
-            print("Error scanning app:", err)
+        if err.exists:
+            err.trace()
         return

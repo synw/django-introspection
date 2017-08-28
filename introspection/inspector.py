@@ -33,19 +33,19 @@ class Inspector:
         if has_model is False:
             appname = path
             stats, error = self.app(appname)
-            if error is not None:
+            if error.exists:
                 return error
             for modelname in stats:
                 rprint("<b>" + modelname + "</b>", ": found",
-                       self.p.bold(stats[modelname] + " instances"))
-            return None
+                       self.p.bold(str(stats[modelname]) + " instances"))
+            return err
         else:
             path = path
             s = path.split(".")
             appname = s[0]
             modelname = s[1]
             infos, error = self.model(appname, modelname)
-            if error is not None:
+            if error.exists:
                 return error
             title("Fields")
             rprint("# Found", self.p.bold(
@@ -83,7 +83,7 @@ class Inspector:
             title("Instances")
             rprint("# Found", self.p.bold(
                 str(infos["count"]) + " instances of " + modelname))
-        return None
+        return err
 
     def apps(self):
         apps = []
@@ -96,29 +96,25 @@ class Inspector:
 
     def app(self, appname):
         appstats = {}
-        models, error = self.models(appname)
-        if error is not None:
-            return None, error
+        models = self._models(appname)
+        if err.exists:
+            err.new("Can not get models for app " + appname, self.app)
+            return appstats, err
         for model in models:
-            count, error = self._count_model(model)
-            if error is not None:
-                return None, error
+            count = self._count_model(model)
+            if err.exists:
+                err.new("Can not count model", self.app)
+                return appstats, err
             appstats[model.__name__] = count
-        return appstats, None
-    """
-    def count(self, appname, modelname):
-        model = self._get_model(appname, modelname)
-        res = model.objects.all().count()
-        return res
-    """
+        return appstats, err
 
     def model(self, appname, modelname):
-        model, error = self._get_model(appname, modelname)
-        if error is not None:
-            return None, error
-        count, error = self._count_model(model)
-        if error is not None:
-            return None, error
+        model = self._get_model(appname, modelname)
+        if err.exists:
+            return None, err
+        count = self._count_model(model)
+        if err.exists:
+            return None, err
         info = {}
         info["count"] = count
         f = model._meta.get_fields(include_parents=False)
@@ -142,19 +138,11 @@ class Inspector:
                 fields.append(fobj)
         info["fields"] = fields
         info["relations"] = relations
-        return info, None
+        return info, err
 
     def models(self, appname):
-        """
-        return models_array, error
-        """
-        app = self._get_app(appname)
-        if appname not in self.appnames:
-            return None, "App " + appname + " not found in settings"
-        models, error = self._get_models(app)
-        if error is not None:
-            return None, error
-        return models, None
+        models = self._models(appname)
+        return models, err
 
     def count(self, jsonq, operator="and"):
         q = self.query(jsonq, operator, count=True)
@@ -192,32 +180,54 @@ class Inspector:
                 q = model.objects.filter(fq).count()
         return q
 
+    def _models(self, appname):
+        """
+        return models_array
+        """
+        app = self._get_app(appname)
+        if err.exists:
+            err.new("Can not get app " + appname, self.models)
+            return None
+        if appname not in self.appnames:
+            err.new("App " + appname + " not found in settings")
+            return None
+        models = self._get_models(app)
+        if err.exists:
+            return None
+        return models
+
     def _get_app(self, appname):
         """
-        returns app object
+        returns app object or None
         """
-        app = APPS.get_app_config(appname)
+        try:
+            app = APPS.get_app_config(appname)
+        except Exception as e:
+            err.new(e)
+            return None
         return app
 
     def _get_model(self, appname, modelname):
         """
-        return model
+        return model or None
         """
         app = self._get_app(appname)
+        if err.exists:
+            err.new("Can not get model " + modelname +
+                    " from app " + app, self._get_model)
         models = app.get_models()
         model = None
         for mod in models:
             if mod.__name__ == modelname:
                 model = mod
                 return model
-        e = Exception("Model " + modelname + " not found")
-        err.new(e)
-        err.check()
+        msg = "Model " + modelname + " not found"
+        err.new(msg)
         return None
 
     def _get_models(self, app):
         """
-        return models_array, error
+        return models_array
         """
         try:
             app_models = app.get_models()
@@ -225,18 +235,20 @@ class Inspector:
             for model in app_models:
                 appmods.append(model)
         except Exception as e:
-            return None, str(e)
-        return appmods, None
+            err.new(e)
+            return None
+        return appmods
 
     def _count_model(self, model):
         """
-        return model count, error
+        return model count
         """
         try:
             res = model.objects.all().count()
         except Exception as e:
-            return None, str(e)
-        return res, None
+            err.new(e)
+            return None, err
+        return res
 
     def _convert_appname(self, appname):
         name = appname
