@@ -8,7 +8,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     version=version,
-    description='Autoreload files in browser for Django development',
+    description='Introspection tools for Django',
     author='synw',
     author_email='synwe@yahoo.com',
     url='https://github.com/synw/django-introspection',
@@ -23,6 +23,7 @@ setup(
     ],
     install_requires=[
         "blessings",
+        "goerr"
     ],
     zip_safe=False
 )

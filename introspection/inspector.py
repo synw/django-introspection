@@ -1,8 +1,10 @@
 from __future__ import print_function
+from django.db.models import Q
 from django.conf import settings
 from django.apps import apps as APPS
 from django.utils.html import strip_tags
 from blessings import Terminal
+from goerr import err
 TERM = "terminal" in settings.INSTALLED_APPS
 if TERM:
     from terminal.commands import rprint as RPRINT
@@ -30,9 +32,9 @@ class Inspector:
         has_model = "." in path
         if has_model is False:
             appname = path
-            stats, err = self.app(appname)
-            if err is not None:
-                return err
+            stats, error = self.app(appname)
+            if error is not None:
+                return error
             for modelname in stats:
                 rprint("<b>" + modelname + "</b>", ": found",
                        self.p.bold(stats[modelname] + " instances"))
@@ -42,9 +44,9 @@ class Inspector:
             s = path.split(".")
             appname = s[0]
             modelname = s[1]
-            infos, err = self.model(appname, modelname)
-            if err is not None:
-                return err
+            infos, error = self.model(appname, modelname)
+            if error is not None:
+                return error
             title("Fields")
             rprint("# Found", self.p.bold(
                 str(len(infos["fields"])) + " fields:"))
@@ -94,13 +96,13 @@ class Inspector:
 
     def app(self, appname):
         appstats = {}
-        models, err = self.models(appname)
-        if err is not None:
-            return None, err
+        models, error = self.models(appname)
+        if error is not None:
+            return None, error
         for model in models:
-            count, err = self._count_model(model)
-            if err is not None:
-                return None, err
+            count, error = self._count_model(model)
+            if error is not None:
+                return None, error
             appstats[model.__name__] = count
         return appstats, None
     """
@@ -111,12 +113,12 @@ class Inspector:
     """
 
     def model(self, appname, modelname):
-        model, err = self._get_model(appname, modelname)
-        if err is not None:
-            return None, err
-        count, err = self._count_model(model)
-        if err is not None:
-            return None, err
+        model, error = self._get_model(appname, modelname)
+        if error is not None:
+            return None, error
+        count, error = self._count_model(model)
+        if error is not None:
+            return None, error
         info = {}
         info["count"] = count
         f = model._meta.get_fields(include_parents=False)
@@ -149,18 +151,57 @@ class Inspector:
         app = self._get_app(appname)
         if appname not in self.appnames:
             return None, "App " + appname + " not found in settings"
-        models, err = self._get_models(app)
-        if err is not None:
-            return None, err
+        models, error = self._get_models(app)
+        if error is not None:
+            return None, error
         return models, None
 
+    def count(self, jsonq, operator="and"):
+        q = self.query(jsonq, operator, count=True)
+        return q
+
+    def query(self, jsonq, operator="and", count=False):
+        """
+        returns a Django orm query from json input:
+        { 
+            "app": "auth",
+            "model": "User",
+            "filters": {
+                "is_superuser": False,
+                "username__icontains": "foo"
+            }
+        """
+        model = self._get_model(jsonq["app"], jsonq["model"])
+        fdict = jsonq["filters"]
+        filters = []
+        for label in fdict:
+            kwargs = {label: fdict[label]}
+            filters.append(Q(**kwargs))
+        if filters == None:
+            q = model.objects.all()
+        else:
+            fq = Q()
+            for f in filters:
+                if operator == "and":
+                    fq = fq & f
+                elif operator == "or":
+                    fq = fq | f
+            if count is False:
+                q = model.objects.filter(fq)
+            else:
+                q = model.objects.filter(fq).count()
+        return q
+
     def _get_app(self, appname):
+        """
+        returns app object
+        """
         app = APPS.get_app_config(appname)
         return app
 
     def _get_model(self, appname, modelname):
         """
-        return model, error
+        return model
         """
         app = self._get_app(appname)
         models = app.get_models()
@@ -168,8 +209,11 @@ class Inspector:
         for mod in models:
             if mod.__name__ == modelname:
                 model = mod
-                return model, None
-        return None, "Model " + modelname + " not found"
+                return model
+        e = Exception("Model " + modelname + " not found")
+        err.new(e)
+        err.check()
+        return None
 
     def _get_models(self, app):
         """
