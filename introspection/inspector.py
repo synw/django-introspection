@@ -160,13 +160,26 @@ class Inspector:
             }
         """
         model = self._get_model(jsonq["app"], jsonq["model"])
+        #print("***************************************** MODEL", model)
+        # print(jsonq)
         fdict = jsonq["filters"]
         filters = []
+        try:
+            q = model.objects.none()
+        except Exception as e:
+            err.new(e)
         for label in fdict:
             kwargs = {label: fdict[label]}
             filters.append(Q(**kwargs))
-        if filters == None:
-            q = model.objects.all()
+        #print("FILTERS", filters)
+
+        if filters == []:
+            try:
+                q = model.objects.all()
+                #print("RETURN NO FILTER")
+                return q, err
+            except Exception as e:
+                err.new(e)
         else:
             fq = Q()
             for f in filters:
@@ -175,10 +188,16 @@ class Inspector:
                 elif operator == "or":
                     fq = fq | f
             if count is False:
-                q = model.objects.filter(fq)
+                try:
+                    q = model.objects.filter(fq)
+                except Exception as e:
+                    err.new(e)
             else:
-                q = model.objects.filter(fq).count()
-        return q
+                try:
+                    q = model.objects.filter(fq).count()
+                except Exception as e:
+                    err.new(e)
+        return q, err
 
     def _models(self, appname):
         """
