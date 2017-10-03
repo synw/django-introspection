@@ -9,7 +9,7 @@ from blessings import Terminal
 from goerr import err
 TERM = "terminal" in settings.INSTALLED_APPS
 if TERM:
-    from terminal.commands import rprint as RPRINT
+    from terminal.commands import cmderr, rprint as RPRINT
 
 
 def prints(*args):
@@ -107,13 +107,16 @@ class Inspector:
         rprint = printfunc()
         path = safe_join(endpath)
         res = {}
-        for (_, dirnames, filenames) in walk(path):
-            #res["dirpath"] = dirpath
-            res["dirnames"] = dirnames
-            res["filenames"] = filenames
-            break
-        rprint("<br />".join(res["dirnames"]))
-        rprint("<br />".join(res["filenames"]))
+        try:
+            for (_, dirnames, filenames) in walk(path):
+                #res["dirpath"] = dirpath
+                res["dirnames"] = dirnames
+                res["filenames"] = filenames
+                break
+            rprint("<br />".join(res["dirnames"]))
+            rprint("<br />".join(res["filenames"]))
+        except:
+            cmderr("Directory " + endpath + " does not exist")
 
     def apps(self):
         apps = []
