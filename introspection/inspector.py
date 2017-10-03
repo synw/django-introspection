@@ -19,8 +19,6 @@ class Inspector:
         self.allowed_apps = self.apps()
 
     def scanapp(self, path=None, term=False):
-        global TERM
-        global RPRINT
         rprint = prints
         if term is True:
             if TERM is True:
@@ -36,8 +34,8 @@ class Inspector:
             if error.exists:
                 return error
             for modelname in stats:
-                rprint("<b>" + modelname + "</b>", ": found",
-                       self.p.bold(str(stats[modelname]) + " instances"))
+                rprint("<b>" + modelname + "</b>", ": found<b>",
+                       str(stats[modelname]) + "</b> instances")
             return err
         else:
             path = path
@@ -48,8 +46,7 @@ class Inspector:
             if error.exists:
                 return error
             title("Fields")
-            rprint("# Found", self.p.bold(
-                str(len(infos["fields"])) + " fields:"))
+            rprint("# Found<b>", str(len(infos["fields"])) + "</b> fields:")
             for field in infos["fields"]:
                 if TERM is True:
                     name = "<b>" + field["name"] + "</b>"
@@ -67,8 +64,8 @@ class Inspector:
                 if numrels == 1:
                     relstr = "relation"
                 title("Relations")
-                rprint("# Found", self.p.bold(str(len(infos["relations"])) +
-                                              " external " + relstr), ":")
+                rprint("# Found<b>", str(
+                    len(infos["relations"])) + "</b> external " + relstr, ":")
                 for rel in infos["relations"]:
                     if TERM is True:
                         name = "<b>" + rel["field"] + "</b>"
@@ -78,11 +75,12 @@ class Inspector:
                     relfield = rel["relfield"]
                     relstr = ""
                     if relname is not None:
-                        relstr = "with related name " + self.p.green(relname)
+                        relstr = "with related name " + relname
                     rprint(name, "from", relfield, rel["type"], relstr)
             title("Instances")
-            rprint("# Found", self.p.bold(
-                str(infos["count"]) + " instances of " + modelname))
+            rprint("# Found<b>", str(infos["count"]) +
+                   "</b> instances of <b>" + modelname + "<b>")
+
         return err
 
     def apps(self):
