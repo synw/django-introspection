@@ -4,10 +4,18 @@ from terminal.commands import Command, rprint
 import json
 
 
+def ls(request, cmd_args):
+    path = "."
+    if len(cmd_args) > 0:
+        path = cmd_args[0]
+    inspect.ls(path)
+
+
 def inspectapp(request, cmd_args):
     err = inspect.scanapp(cmd_args[0], term=True)
-    if err != None:
-        rprint("Error scanning app", err)
+    if err.exists:
+        err.new("Error inspecting app", inspectapp)
+        rprint("Error scanning app", err.to_json(indent=2))
     return None
 
 
@@ -41,5 +49,6 @@ def setting(request, cmd_args):
 c0 = Command("setting", setting, "Show a setting: ex: setting apps")
 c1 = Command("inspect", inspectapp,
              "Inspect an app: ex: inspect auth")
+c2 = Command("ls", ls, "Directory listing: ex: ls templates")
 
-COMMANDS = [c0, c1]
+COMMANDS = [c0, c1, c2]

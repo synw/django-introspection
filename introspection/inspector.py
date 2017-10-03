@@ -1,13 +1,35 @@
 from __future__ import print_function
+from os import walk
 from django.db.models import Q
 from django.conf import settings
 from django.apps import apps as APPS
 from django.utils.html import strip_tags
+from django.utils._os import safe_join
 from blessings import Terminal
 from goerr import err
 TERM = "terminal" in settings.INSTALLED_APPS
 if TERM:
     from terminal.commands import rprint as RPRINT
+
+
+def prints(*args):
+    msg = ""
+    for arg in args:
+        msg += strip_tags(arg) + " "
+    print(msg)
+
+
+PRINTS = prints
+
+
+def printfunc(term=False):
+    global PRINTS
+    if term is False:
+        term = TERM
+    if term is True:
+        return RPRINT
+    else:
+        return PRINTS
 
 
 class Inspector:
@@ -19,12 +41,7 @@ class Inspector:
         self.allowed_apps = self.apps()
 
     def scanapp(self, path=None, term=False):
-        rprint = prints
-        if term is True:
-            if TERM is True:
-                rprint = RPRINT
-            else:
-                return "Terminal is not installed: can not remote print"
+        rprint = printfunc(term)
         if path == None:
             return "A path is required: ex: auth.User"
         has_model = "." in path
@@ -82,6 +99,21 @@ class Inspector:
                    "</b> instances of <b>" + modelname + "<b>")
 
         return err
+
+    def ls(self, endpath="."):
+        """
+        ls command for django-terminal
+        """
+        rprint = printfunc()
+        path = safe_join(endpath)
+        res = {}
+        for (_, dirnames, filenames) in walk(path):
+            #res["dirpath"] = dirpath
+            res["dirnames"] = dirnames
+            res["filenames"] = filenames
+            break
+        rprint("<br />".join(res["dirnames"]))
+        rprint("<br />".join(res["filenames"]))
 
     def apps(self):
         apps = []
@@ -281,10 +313,3 @@ def title(name):
     print("========================================================")
     print("                     " + name)
     print("========================================================")
-
-
-def prints(*args):
-    msg = ""
-    for arg in args:
-        msg += strip_tags(arg) + " "
-    print(msg)
