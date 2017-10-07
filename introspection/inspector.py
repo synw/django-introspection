@@ -1,5 +1,5 @@
 from __future__ import print_function
-from os import walk
+import os
 from django.db.models import Q
 from django.conf import settings
 from django.apps import apps as APPS
@@ -43,25 +43,26 @@ class Inspector:
     def scanapp(self, path=None, term=False):
         rprint = printfunc(term)
         if path == None:
-            return "A path is required: ex: auth.User"
+            err.new("A path is required: ex: auth.User")
+            return
         has_model = "." in path
         if has_model is False:
             appname = path
-            stats, error = self.app(appname)
-            if error.exists:
-                return error
+            stats = self.app(appname)
+            if err.exists:
+                return
             for modelname in stats:
                 rprint("<b>" + modelname + "</b>", ": found<b>",
                        str(stats[modelname]) + "</b> instances")
-            return err
+            return
         else:
             path = path
             s = path.split(".")
             appname = s[0]
             modelname = s[1]
-            infos, error = self.model(appname, modelname)
-            if error.exists:
-                return error
+            infos = self.model(appname, modelname)
+            if err.exists:
+                return
             title("Fields")
             rprint("# Found<b>", str(len(infos["fields"])) + "</b> fields:")
             for field in infos["fields"]:
@@ -98,7 +99,7 @@ class Inspector:
             rprint("# Found<b>", str(infos["count"]) +
                    "</b> instances of <b>" + modelname + "<b>")
 
-        return err
+        return
 
     def ls(self, endpath="."):
         """
@@ -108,7 +109,7 @@ class Inspector:
         path = safe_join(endpath)
         res = {}
         try:
-            for (_, dirnames, filenames) in walk(path):
+            for (_, dirnames, filenames) in os.walk(path):
                 #res["dirpath"] = dirpath
                 res["dirnames"] = dirnames
                 res["filenames"] = filenames
@@ -132,22 +133,22 @@ class Inspector:
         models = self._models(appname)
         if err.exists:
             err.new("Can not get models for app " + appname, self.app)
-            return appstats, err
+            return appstats
         for model in models:
             count = self._count_model(model)
             if err.exists:
                 err.new("Can not count model", self.app)
-                return appstats, err
+                return appstats
             appstats[model.__name__] = count
-        return appstats, err
+        return appstats
 
     def model(self, appname, modelname):
         model = self._get_model(appname, modelname)
         if err.exists:
-            return None, err
+            return None
         count = self._count_model(model)
         if err.exists:
-            return None, err
+            return None
         info = {}
         info["count"] = count
         f = model._meta.get_fields(include_parents=False)
@@ -171,11 +172,11 @@ class Inspector:
                 fields.append(fobj)
         info["fields"] = fields
         info["relations"] = relations
-        return info, err
+        return info
 
     def models(self, appname):
         models = self._models(appname)
-        return models, err
+        return models
 
     def count(self, jsonq, operator="and"):
         q = self.query(jsonq, operator, count=True)
@@ -193,6 +194,8 @@ class Inspector:
             }
         """
         model = self._get_model(jsonq["app"], jsonq["model"])
+        if err.exists:
+            return None
         #print("***************************************** MODEL", model)
         # print(jsonq)
         fdict = jsonq["filters"]
@@ -201,6 +204,7 @@ class Inspector:
             q = model.objects.none()
         except Exception as e:
             err.new(e)
+            return None
         for label in fdict:
             kwargs = {label: fdict[label]}
             filters.append(Q(**kwargs))
@@ -209,10 +213,10 @@ class Inspector:
         if filters == []:
             try:
                 q = model.objects.all()
-                #print("RETURN NO FILTER")
-                return q, err
+                return None
             except Exception as e:
                 err.new(e)
+                return None
         else:
             fq = Q()
             for f in filters:
@@ -225,12 +229,45 @@ class Inspector:
                     q = model.objects.filter(fq)
                 except Exception as e:
                     err.new(e)
+                    return None
             else:
                 try:
                     q = model.objects.filter(fq).count()
                 except Exception as e:
                     err.new(e)
-        return q, err
+                    return None
+        return q
+
+    """
+    def tree(self, pdir):
+        rprint = printfunc()
+        fileslist = []
+        dirslist = []
+        path = settings.BASE_DIR
+        try:
+            path = safe_join(pdir)
+            rprint(path)
+        except:
+            cmderr("Directory " + pdir + " not found")
+        dirslist, fileslist = self.walkdir(path)
+        rprint("<br />".join(dirslist))
+        rprint("<br />".join(fileslist))
+        if len(dirslist) < 1:
+            for xdir in dirslist:
+                path = path = safe_join(xdir)
+                dirslist, fileslist = self.walkdir(path)
+
+    def walkdir(self, path):
+        for root, dirs, files in os.walk(path):
+            rfiles = []
+            rdirs = []
+            #path = root.split(os.sep)
+            rdirs.append((len(path) - 1) * '-' + os.path.basename(root))
+            for file in files:
+                rfiles.append(len(path) * '-' + file)
+            break
+        return dirs, files
+    """
 
     def _models(self, appname):
         """
@@ -267,6 +304,7 @@ class Inspector:
         if err.exists:
             err.new("Can not get model " + modelname +
                     " from app " + app, self._get_model)
+            return None
         models = app.get_models()
         model = None
         for mod in models:
@@ -299,7 +337,7 @@ class Inspector:
             res = model.objects.all().count()
         except Exception as e:
             err.new(e)
-            return None, err
+            return None
         return res
 
     def _convert_appname(self, appname):
