@@ -14,13 +14,13 @@ Introspection tools for Django
    # get a list of apps objects:
    apps = inspect.apps()
    # get a list of models objects:
-   models, err = inspect.models("auth")
+   models = inspect.models("auth")
    
    # get info about an app:
-   app_info, err = inspect.app("auth")
+   app_info = inspect.app("auth")
    
    # get info about a model:
-   model_info, err = inspect.model("auth", "User")
+   model_info = inspect.model("auth", "User")
    
    # go style error handling (doc: https://github.com/synw/goerr#api)
    if err.exists:
