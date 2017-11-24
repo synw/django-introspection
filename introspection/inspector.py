@@ -1,35 +1,13 @@
 from __future__ import print_function
-import os
 from django.db.models import Q
 from django.conf import settings
 from django.apps import apps as APPS
 from django.utils.html import strip_tags
-from django.utils._os import safe_join
 from blessings import Terminal
 from goerr import err
 TERM = "terminal" in settings.INSTALLED_APPS
 if TERM:
-    from terminal.commands import cmderr, rprint as RPRINT
-
-
-def prints(*args):
-    msg = ""
-    for arg in args:
-        msg += strip_tags(arg) + " "
-    print(msg)
-
-
-PRINTS = prints
-
-
-def printfunc(term=False):
-    global PRINTS
-    if term is False:
-        term = TERM
-    if term is True:
-        return RPRINT
-    else:
-        return PRINTS
+    from terminal.commands import rprint as RPRINT
 
 
 class Inspector:
@@ -41,19 +19,25 @@ class Inspector:
         self.allowed_apps = self.apps()
 
     def scanapp(self, path=None, term=False):
-        rprint = printfunc(term)
+        global TERM
+        global RPRINT
+        rprint = prints
+        if term is True:
+            if TERM is True:
+                rprint = RPRINT
+            else:
+                err.new(self.scan_app,
+                        "Terminal is not installed: can not remote print")
+                return
         if path == None:
-            err.new("A path is required: ex: auth.User")
-            return
+            return "A path is required: ex: auth.User"
         has_model = "." in path
         if has_model is False:
             appname = path
             stats = self.app(appname)
-            if err.exists:
-                return
             for modelname in stats:
-                rprint("<b>" + modelname + "</b>", ": found<b>",
-                       str(stats[modelname]) + "</b> instances")
+                rprint("<b>" + modelname + "</b>", ": found",
+                       self.p.bold(str(stats[modelname]) + " instances"))
             return
         else:
             path = path
@@ -61,10 +45,9 @@ class Inspector:
             appname = s[0]
             modelname = s[1]
             infos = self.model(appname, modelname)
-            if err.exists:
-                return
             title("Fields")
-            rprint("# Found<b>", str(len(infos["fields"])) + "</b> fields:")
+            rprint("# Found", self.p.bold(
+                str(len(infos["fields"])) + " fields:"))
             for field in infos["fields"]:
                 if TERM is True:
                     name = "<b>" + field["name"] + "</b>"
@@ -82,8 +65,8 @@ class Inspector:
                 if numrels == 1:
                     relstr = "relation"
                 title("Relations")
-                rprint("# Found<b>", str(
-                    len(infos["relations"])) + "</b> external " + relstr, ":")
+                rprint("# Found", self.p.bold(str(len(infos["relations"])) +
+                                              " external " + relstr), ":")
                 for rel in infos["relations"]:
                     if TERM is True:
                         name = "<b>" + rel["field"] + "</b>"
@@ -93,31 +76,13 @@ class Inspector:
                     relfield = rel["relfield"]
                     relstr = ""
                     if relname is not None:
-                        relstr = "with related name " + relname
+                        relstr = "with related name " + self.p.green(relname)
                     rprint(name, "from", relfield, rel["type"], relstr)
             title("Instances")
-            rprint("# Found<b>", str(infos["count"]) +
-                   "</b> instances of <b>" + modelname + "<b>")
-
-        return
-
-    def ls(self, endpath="."):
-        """
-        ls command for django-terminal
-        """
-        rprint = printfunc()
-        path = safe_join(endpath)
-        res = {}
-        try:
-            for (_, dirnames, filenames) in os.walk(path):
-                #res["dirpath"] = dirpath
-                res["dirnames"] = dirnames
-                res["filenames"] = filenames
-                break
-            rprint("<br />".join(res["dirnames"]))
-            rprint("<br />".join(res["filenames"]))
-        except:
-            cmderr("Directory " + endpath + " does not exist")
+            rprint("# Found", self.p.bold(
+                str(infos["count"]) + " instances of " + modelname))
+        if err.exists:
+            err.report()
 
     def apps(self):
         apps = []
@@ -126,6 +91,8 @@ class Inspector:
             self.appnames.append(appname)
             app = APPS.get_app_config(appname)
             apps.append(app)
+        if err.exists:
+            err.report()
         return apps
 
     def app(self, appname):
@@ -140,6 +107,8 @@ class Inspector:
                 err.new("Can not count model", self.app)
                 return appstats
             appstats[model.__name__] = count
+        if err.exists:
+            err.report()
         return appstats
 
     def model(self, appname, modelname):
@@ -172,14 +141,20 @@ class Inspector:
                 fields.append(fobj)
         info["fields"] = fields
         info["relations"] = relations
+        if err.exists:
+            err.report()
         return info
 
     def models(self, appname):
         models = self._models(appname)
+        if err.exists:
+            err.report()
         return models
 
     def count(self, jsonq, operator="and"):
         q = self.query(jsonq, operator, count=True)
+        if err.exists:
+            err.report()
         return q
 
     def query(self, jsonq, operator="and", count=False):
@@ -194,8 +169,6 @@ class Inspector:
             }
         """
         model = self._get_model(jsonq["app"], jsonq["model"])
-        if err.exists:
-            return None
         #print("***************************************** MODEL", model)
         # print(jsonq)
         fdict = jsonq["filters"]
@@ -204,7 +177,6 @@ class Inspector:
             q = model.objects.none()
         except Exception as e:
             err.new(e)
-            return None
         for label in fdict:
             kwargs = {label: fdict[label]}
             filters.append(Q(**kwargs))
@@ -213,10 +185,10 @@ class Inspector:
         if filters == []:
             try:
                 q = model.objects.all()
-                return None
+                #print("RETURN NO FILTER")
+                return q, err
             except Exception as e:
                 err.new(e)
-                return None
         else:
             fq = Q()
             for f in filters:
@@ -229,45 +201,14 @@ class Inspector:
                     q = model.objects.filter(fq)
                 except Exception as e:
                     err.new(e)
-                    return None
             else:
                 try:
                     q = model.objects.filter(fq).count()
                 except Exception as e:
                     err.new(e)
-                    return None
+        if err.exists:
+            err.report()
         return q
-
-    """
-    def tree(self, pdir):
-        rprint = printfunc()
-        fileslist = []
-        dirslist = []
-        path = settings.BASE_DIR
-        try:
-            path = safe_join(pdir)
-            rprint(path)
-        except:
-            cmderr("Directory " + pdir + " not found")
-        dirslist, fileslist = self.walkdir(path)
-        rprint("<br />".join(dirslist))
-        rprint("<br />".join(fileslist))
-        if len(dirslist) < 1:
-            for xdir in dirslist:
-                path = path = safe_join(xdir)
-                dirslist, fileslist = self.walkdir(path)
-
-    def walkdir(self, path):
-        for root, dirs, files in os.walk(path):
-            rfiles = []
-            rdirs = []
-            #path = root.split(os.sep)
-            rdirs.append((len(path) - 1) * '-' + os.path.basename(root))
-            for file in files:
-                rfiles.append(len(path) * '-' + file)
-            break
-        return dirs, files
-    """
 
     def _models(self, appname):
         """
@@ -304,7 +245,6 @@ class Inspector:
         if err.exists:
             err.new("Can not get model " + modelname +
                     " from app " + app, self._get_model)
-            return None
         models = app.get_models()
         model = None
         for mod in models:
@@ -313,7 +253,6 @@ class Inspector:
                 return model
         msg = "Model " + modelname + " not found"
         err.new(msg)
-        return None
 
     def _get_models(self, app):
         """
@@ -337,7 +276,7 @@ class Inspector:
             res = model.objects.all().count()
         except Exception as e:
             err.new(e)
-            return None
+            return None, err
         return res
 
     def _convert_appname(self, appname):
@@ -354,3 +293,10 @@ def title(name):
     print("========================================================")
     print("                     " + name)
     print("========================================================")
+
+
+def prints(*args):
+    msg = ""
+    for arg in args:
+        msg += strip_tags(arg) + " "
+    print(msg)
