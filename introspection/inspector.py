@@ -93,6 +93,7 @@ class Inspector:
             apps.append(app)
         if err.exists:
             err.report()
+            return
         return apps
 
     def app(self, appname):
@@ -109,15 +110,16 @@ class Inspector:
             appstats[model.__name__] = count
         if err.exists:
             err.report()
+            return
         return appstats
 
     def model(self, appname, modelname):
         model = self._get_model(appname, modelname)
         if err.exists:
-            return None
+            return
         count = self._count_model(model)
         if err.exists:
-            return None
+            return
         info = {}
         info["count"] = count
         f = model._meta.get_fields(include_parents=False)
@@ -143,18 +145,21 @@ class Inspector:
         info["relations"] = relations
         if err.exists:
             err.report()
+            return
         return info
 
     def models(self, appname):
         models = self._models(appname)
         if err.exists:
             err.report()
+            return
         return models
 
     def count(self, jsonq, operator="and"):
         q = self.query(jsonq, operator, count=True)
         if err.exists:
             err.report()
+            return
         return q
 
     def query(self, jsonq, operator="and", count=False):
@@ -217,13 +222,13 @@ class Inspector:
         app = self._get_app(appname)
         if err.exists:
             err.new("Can not get app " + appname, self.models)
-            return None
+            return
         if appname not in self.appnames:
             err.new("App " + appname + " not found in settings")
-            return None
+            return
         models = self._get_models(app)
         if err.exists:
-            return None
+            return
         return models
 
     def _get_app(self, appname):
@@ -234,7 +239,7 @@ class Inspector:
             app = APPS.get_app_config(appname)
         except Exception as e:
             err.new(e)
-            return None
+            return
         return app
 
     def _get_model(self, appname, modelname):
@@ -265,7 +270,7 @@ class Inspector:
                 appmods.append(model)
         except Exception as e:
             err.new(e)
-            return None
+            return
         return appmods
 
     def _count_model(self, model):
@@ -276,7 +281,7 @@ class Inspector:
             res = model.objects.all().count()
         except Exception as e:
             err.new(e)
-            return None, err
+            return
         return res
 
     def _convert_appname(self, appname):
