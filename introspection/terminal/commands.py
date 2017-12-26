@@ -1,7 +1,7 @@
 from goerr import err
 from django.conf import settings
 from introspection.inspector import inspect
-from terminal.commands import Command, rprint
+from term.commands import Command, rprint
 import json
 
 """

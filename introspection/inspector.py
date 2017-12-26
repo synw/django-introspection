@@ -5,9 +5,9 @@ from django.apps import apps as APPS
 from django.utils.html import strip_tags
 from blessings import Terminal
 from goerr import err
-TERM = "terminal" in settings.INSTALLED_APPS
+TERM = "term" in settings.INSTALLED_APPS
 if TERM:
-    from terminal.commands import rprint as RPRINT
+    from term.commands import rprint as RPRINT
 
 
 class Inspector:
@@ -26,7 +26,7 @@ class Inspector:
             if TERM is True:
                 rprint = RPRINT
             else:
-                err.new(self.scan_app,
+                err.new(self.scanapp,
                         "Terminal is not installed: can not remote print")
                 return
         if path == None:
@@ -46,8 +46,12 @@ class Inspector:
             modelname = s[1]
             infos = self.model(appname, modelname)
             title("Fields")
-            rprint("# Found", self.p.bold(
-                str(len(infos["fields"])) + " fields:"))
+            if TERM is False:
+                rprint("# Found", self.p.bold(
+                    str(len(infos["fields"])) + " fields:"))
+            else:
+                rprint("# Found<b>", str(
+                    len(infos["fields"])) + "</b> fields:")
             for field in infos["fields"]:
                 if TERM is True:
                     name = "<b>" + field["name"] + "</b>"
@@ -65,8 +69,12 @@ class Inspector:
                 if numrels == 1:
                     relstr = "relation"
                 title("Relations")
-                rprint("# Found", self.p.bold(str(len(infos["relations"])) +
-                                              " external " + relstr), ":")
+                if TERM is False:
+                    rprint("# Found", self.p.bold(str(len(infos["relations"])) +
+                                                  " external " + relstr), ":")
+                else:
+                    rprint("# Found<b>",
+                           str(infos["count"]) + "</b> instances of " + modelname)
                 for rel in infos["relations"]:
                     if TERM is True:
                         name = "<b>" + rel["field"] + "</b>"
@@ -79,8 +87,11 @@ class Inspector:
                         relstr = "with related name " + self.p.green(relname)
                     rprint(name, "from", relfield, rel["type"], relstr)
             title("Instances")
-            rprint("# Found", self.p.bold(
-                str(infos["count"]) + " instances of " + modelname))
+            if TERM is False:
+                rprint("# Found", self.p.bold(
+                    str(infos["count"]) + " instances of " + modelname))
+            else:
+                rprint("# Found <b>" + str(numrels) + "</b> relations")
         if err.exists:
             err.report()
 
@@ -166,12 +177,12 @@ class Inspector:
         """
         returns a Django orm query from json input:
         { 
-            "app": "auth",
-            "model": "User",
-            "filters": {
-                "is_superuser": False,
-                "username__icontains": "foo"
-            }
+                                        "app": "auth",
+                                        "model": "User",
+                                        "filters": {
+                                                                        "is_superuser": False,
+                                                                        "username__icontains": "foo"
+                                        }
         """
         model = self._get_model(jsonq["app"], jsonq["model"])
         #print("***************************************** MODEL", model)
@@ -296,7 +307,7 @@ inspect = Inspector()
 
 def title(name):
     print("========================================================")
-    print("                     " + name)
+    print("					 " + name)
     print("========================================================")
 
 
