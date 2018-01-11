@@ -29,7 +29,7 @@ class Inspector:
                 err.new(self.scanapp,
                         "Terminal is not installed: can not remote print")
                 return
-        if path == None:
+        if path is None:
             return "A path is required: ex: auth.User"
         has_model = "." in path
         if has_model is False:
@@ -166,6 +166,13 @@ class Inspector:
             return
         return models
 
+    def has_m2m(self, model):
+        ftypes = model._meta.get_fields(include_parents=False)
+        for field in ftypes:
+            if field.get_internal_type() == "ManyToManyField":
+                return True
+        return False
+
     def count(self, jsonq, operator="and"):
         q = self.query(jsonq, operator, count=True)
         if err.exists:
@@ -176,17 +183,15 @@ class Inspector:
     def query(self, jsonq, operator="and", count=False):
         """
         returns a Django orm query from json input:
-        { 
-                                        "app": "auth",
-                                        "model": "User",
-                                        "filters": {
-                                                                        "is_superuser": False,
-                                                                        "username__icontains": "foo"
-                                        }
+        {
+        "app": "auth",
+        "model": "User",
+        "filters": {
+            "is_superuser": False,
+            "username__icontains": "foo"
+        }
         """
         model = self._get_model(jsonq["app"], jsonq["model"])
-        #print("***************************************** MODEL", model)
-        # print(jsonq)
         fdict = jsonq["filters"]
         filters = []
         try:
@@ -196,12 +201,9 @@ class Inspector:
         for label in fdict:
             kwargs = {label: fdict[label]}
             filters.append(Q(**kwargs))
-        #print("FILTERS", filters)
-
         if filters == []:
             try:
                 q = model.objects.all()
-                #print("RETURN NO FILTER")
                 return q, err
             except Exception as e:
                 err.new(e)
