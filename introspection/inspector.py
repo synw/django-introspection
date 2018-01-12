@@ -3,6 +3,7 @@ from django.db.models import Q
 from django.conf import settings
 from django.apps import apps as APPS
 from django.utils.html import strip_tags
+from django.contrib.contenttypes.fields import GenericForeignKey
 from blessings import Terminal
 from goerr import err
 TERM = "term" in settings.INSTALLED_APPS
@@ -169,9 +170,19 @@ class Inspector:
     def has_m2m(self, model):
         ftypes = model._meta.get_fields(include_parents=False)
         for field in ftypes:
+            if isinstance(field, GenericForeignKey):
+                continue
             if field.get_internal_type() == "ManyToManyField":
                 return True
         return False
+
+    def field_type(self, model, fieldname):
+        ftypes = model._meta.get_fields(include_parents=False)
+        ftype = None
+        for field in ftypes:
+            if field.name == fieldname:
+                ftype = field.get_internal_type()
+        return ftype
 
     def count(self, jsonq, operator="and"):
         q = self.query(jsonq, operator, count=True)
@@ -309,7 +320,7 @@ inspect = Inspector()
 
 def title(name):
     print("========================================================")
-    print("					 " + name)
+    print("                     " + name)
     print("========================================================")
 
 
