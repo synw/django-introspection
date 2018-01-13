@@ -37,8 +37,12 @@ class Inspector:
             appname = path
             stats = self.app(appname)
             for modelname in stats:
+                if TERM is False:
+                    msg = self.p.bold(str(stats[modelname]))
+                else:
+                    msg = "<b>" + str(stats[modelname]) + "</b>"
                 rprint("<b>" + modelname + "</b>", ": found",
-                       self.p.bold(str(stats[modelname]) + " instances"))
+                       msg + " instances")
             return
         else:
             path = path
@@ -93,11 +97,10 @@ class Inspector:
                     str(infos["count"]) + " instances of " + modelname))
             else:
                 rprint("# Found <b>" + str(numrels) + "</b> relations")
-        if err.exists:
-            err.report()
 
     def apps(self):
         apps = []
+        self.appnames = []
         for appname in settings.INSTALLED_APPS:
             appname = self._convert_appname(appname)
             self.appnames.append(appname)
