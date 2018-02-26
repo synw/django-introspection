@@ -22,7 +22,6 @@ setup(
         'Programming Language :: Python :: 3.5',
     ],
     install_requires=[
-        "blessings",
         "goerr"
     ],
     zip_safe=False
