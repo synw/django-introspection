@@ -4,17 +4,16 @@ from django.conf import settings
 from django.apps import apps as APPS
 from django.utils.html import strip_tags
 from django.contrib.contenttypes.fields import GenericForeignKey
-from blessings import Terminal
-from goerr import err
+from goerr import err, colors
+from .users import UserInspector
 TERM = "term" in settings.INSTALLED_APPS
 if TERM:
     from term.commands import rprint as RPRINT
 
 
-class Inspector:
+class Inspector(UserInspector):
     allowed_apps = []
     appnames = []
-    p = Terminal()
 
     def __init__(self):
         self.allowed_apps = self.apps()
@@ -38,7 +37,7 @@ class Inspector:
             stats = self.app(appname)
             for modelname in stats:
                 if TERM is False:
-                    msg = self.p.bold(str(stats[modelname]))
+                    msg = colors.bold(str(stats[modelname]))
                 else:
                     msg = "<b>" + str(stats[modelname]) + "</b>"
                 rprint("<b>" + modelname + "</b>", ": found",
@@ -52,7 +51,7 @@ class Inspector:
             infos = self.model(appname, modelname)
             title("Fields")
             if TERM is False:
-                rprint("# Found", self.p.bold(
+                rprint("# Found", colors.bold(
                     str(len(infos["fields"])) + " fields:"))
             else:
                 rprint("# Found<b>", str(
@@ -61,7 +60,7 @@ class Inspector:
                 if TERM is True:
                     name = "<b>" + field["name"] + "</b>"
                 else:
-                    name = self.p.bold_green(field["name"])
+                    name = colors.green(field["name"])
                 ftype = field["class"]
                 rel = field["related"]
                 msg = name + " " + ftype
@@ -75,7 +74,7 @@ class Inspector:
                     relstr = "relation"
                 title("Relations")
                 if TERM is False:
-                    rprint("# Found", self.p.bold(str(len(infos["relations"])) +
+                    rprint("# Found", colors.bold(str(len(infos["relations"])) +
                                                   " external " + relstr), ":")
                 else:
                     rprint("# Found<b>",
@@ -84,16 +83,16 @@ class Inspector:
                     if TERM is True:
                         name = "<b>" + rel["field"] + "</b>"
                     else:
-                        name = self.p.bold_green(rel["field"])
+                        name = colors.green(rel["field"])
                     relname = rel["related_name"]
                     relfield = rel["relfield"]
                     relstr = ""
                     if relname is not None:
-                        relstr = "with related name " + self.p.green(relname)
+                        relstr = "with related name " + colors.green(relname)
                     rprint(name, "from", relfield, rel["type"], relstr)
             title("Instances")
             if TERM is False:
-                rprint("# Found", self.p.bold(
+                rprint("# Found", colors.bold(
                     str(infos["count"]) + " instances of " + modelname))
             else:
                 rprint("# Found <b>" + str(numrels) + "</b> relations")
@@ -106,6 +105,18 @@ class Inspector:
             self.appnames.append(appname)
             app = APPS.get_app_config(appname)
             apps.append(app)
+        if err.exists:
+            err.report()
+            return
+        return apps
+
+    def app_names(self):
+        apps = []
+        self.appnames = []
+        for appname in settings.INSTALLED_APPS:
+            appname = self._convert_appname(appname)
+            self.appnames.append(appname)
+            apps.append(self._convert_appname(appname))
         if err.exists:
             err.report()
             return
