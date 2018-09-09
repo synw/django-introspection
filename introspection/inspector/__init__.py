@@ -4,14 +4,14 @@ from django.conf import settings
 from django.apps import apps as APPS
 from django.utils.html import strip_tags
 from django.contrib.contenttypes.fields import GenericForeignKey
-from goerr import err, colors
+from goerr import Err, colors
 from .users import UserInspector
 TERM = "term" in settings.INSTALLED_APPS
 if TERM:
     from term.commands import rprint as RPRINT
 
 
-class Inspector(UserInspector):
+class Inspector(UserInspector, Err):
     allowed_apps = []
     appnames = []
 
@@ -26,8 +26,7 @@ class Inspector(UserInspector):
             if TERM is True:
                 rprint = RPRINT
             else:
-                err.new(self.scanapp,
-                        "Terminal is not installed: can not remote print")
+                self.err("Terminal is not installed: can not remote print")
                 return
         if path is None:
             return "A path is required: ex: auth.User"
@@ -74,7 +73,7 @@ class Inspector(UserInspector):
                     relstr = "relation"
                 title("Relations")
                 if TERM is False:
-                    rprint("# Found", colors.bold(str(len(infos["relations"])) +
+                    rprint("# Found", colors.bold(str(len(infos["relations"])) + 
                                                   " external " + relstr), ":")
                 else:
                     rprint("# Found<b>",
@@ -105,8 +104,6 @@ class Inspector(UserInspector):
             self.appnames.append(appname)
             app = APPS.get_app_config(appname)
             apps.append(app)
-        if err.exists:
-            err.report()
             return
         return apps
 
@@ -117,35 +114,29 @@ class Inspector(UserInspector):
             appname = self._convert_appname(appname)
             self.appnames.append(appname)
             apps.append(self._convert_appname(appname))
-        if err.exists:
-            err.report()
             return
         return apps
 
     def app(self, appname):
         appstats = {}
-        models = self._models(appname)
-        if err.exists:
-            err.new("Can not get models for app " + appname, self.app)
+        try:
+            models = self._models(appname)
+        except Exception as e:
+            self.err("Can not get models for app " + appname, self.app, e)
             return appstats
         for model in models:
-            count = self._count_model(model)
-            if err.exists:
-                err.new("Can not count model", self.app)
-                return appstats
+            try:
+                count = self._count_model(model)
+            except Exception as e:
+                self.err("Can not count model", e)
+            return appstats
             appstats[model.__name__] = count
-        if err.exists:
-            err.report()
             return
         return appstats
 
     def model(self, appname, modelname):
         model = self._get_model(appname, modelname)
-        if err.exists:
-            return
         count = self._count_model(model)
-        if err.exists:
-            return
         info = {}
         info["count"] = count
         f = model._meta.get_fields(include_parents=False)
@@ -169,16 +160,13 @@ class Inspector(UserInspector):
                 fields.append(fobj)
         info["fields"] = fields
         info["relations"] = relations
-        if err.exists:
-            err.report()
-            return
         return info
 
     def models(self, appname):
-        models = self._models(appname)
-        if err.exists:
-            err.report()
-            return
+        try:
+            models = self._models(appname)
+        except Exception as e:
+            self.err("Can not get models", e)
         return models
 
     def has_m2m(self, model):
@@ -200,9 +188,6 @@ class Inspector(UserInspector):
 
     def count(self, jsonq, operator="and"):
         q = self.query(jsonq, operator, count=True)
-        if err.exists:
-            err.report()
-            return
         return q
 
     def query(self, jsonq, operator="and", count=False):
@@ -222,16 +207,16 @@ class Inspector(UserInspector):
         try:
             q = model.objects.none()
         except Exception as e:
-            err.new(e)
+            self.err(e)
         for label in fdict:
             kwargs = {label: fdict[label]}
             filters.append(Q(**kwargs))
         if filters == []:
             try:
                 q = model.objects.all()
-                return q, err
+                return q
             except Exception as e:
-                err.new(e)
+                self.err(e)
         else:
             fq = Q()
             for f in filters:
@@ -243,30 +228,27 @@ class Inspector(UserInspector):
                 try:
                     q = model.objects.filter(fq)
                 except Exception as e:
-                    err.new(e)
+                    self.err(e)
             else:
                 try:
                     q = model.objects.filter(fq).count()
                 except Exception as e:
-                    err.new(e)
-        if err.exists:
-            err.report()
+                    self.err(e)
         return q
 
     def _models(self, appname):
         """
         return models_array
         """
-        app = self._get_app(appname)
-        if err.exists:
-            err.new("Can not get app " + appname, self.models)
+        try:
+            app = self._get_app(appname)
+        except Exception as e:
+            self.err("Can not get app " + appname, e)
             return
         if appname not in self.appnames:
-            err.new("App " + appname + " not found in settings")
+            self.err("App " + appname + " not found in settings")
             return
         models = self._get_models(app)
-        if err.exists:
-            return
         return models
 
     def _get_app(self, appname):
@@ -276,7 +258,7 @@ class Inspector(UserInspector):
         try:
             app = APPS.get_app_config(appname)
         except Exception as e:
-            err.new(e)
+            self.err(e)
             return
         return app
 
@@ -285,9 +267,6 @@ class Inspector(UserInspector):
         return model or None
         """
         app = self._get_app(appname)
-        if err.exists:
-            err.new("Can not get model " + modelname +
-                    " from app " + app, self._get_model)
         models = app.get_models()
         model = None
         for mod in models:
@@ -295,7 +274,6 @@ class Inspector(UserInspector):
                 model = mod
                 return model
         msg = "Model " + modelname + " not found"
-        err.new(msg)
 
     def _get_models(self, app):
         """
@@ -307,7 +285,7 @@ class Inspector(UserInspector):
             for model in app_models:
                 appmods.append(model)
         except Exception as e:
-            err.new(e)
+            self.err(e)
             return
         return appmods
 
@@ -318,7 +296,7 @@ class Inspector(UserInspector):
         try:
             res = model.objects.all().count()
         except Exception as e:
-            err.new(e)
+            self.err(e)
             return
         return res
 

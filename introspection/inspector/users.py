@@ -1,21 +1,22 @@
 from django.contrib.auth.models import Permission, User
-from goerr import err
+from goerr import Err
 
 
-class UserInspector:
+class UserInspector(Err):
 
     def get_user(self, username):
         user = None
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist as e:
-            err.new(e, self.get_user, "Can not find user " + username)
+            self.err(e, "Can not find user " + username, e)
         return user
 
     def user_info(self, username):
-        user = self.get_user(username)
-        if err.exists:
-            err.new(self.user_class, "Can not retrieve user, aborting")
+        try:
+            user = self.get_user(username)
+        except Exception as e:
+            self.err("Can not retrieve user, aborting", e)
             return None
         sup = user.is_superuser
         staff = user.is_staff
@@ -29,8 +30,6 @@ class UserInspector:
         app_perms = []
         apps = self.app_names()
         user = self.get_user(username)
-        if err.exists:
-            return user_perms, group_perms, app_perms
         if user.is_superuser:
             perms = Permission.objects.all()
             for perm in perms:
