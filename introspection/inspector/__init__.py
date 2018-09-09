@@ -104,7 +104,6 @@ class Inspector(UserInspector, Err):
             self.appnames.append(appname)
             app = APPS.get_app_config(appname)
             apps.append(app)
-            return
         return apps
 
     def app_names(self):
@@ -114,7 +113,6 @@ class Inspector(UserInspector, Err):
             appname = self._convert_appname(appname)
             self.appnames.append(appname)
             apps.append(self._convert_appname(appname))
-            return
         return apps
 
     def app(self, appname):
@@ -129,9 +127,8 @@ class Inspector(UserInspector, Err):
                 count = self._count_model(model)
             except Exception as e:
                 self.err("Can not count model", e)
-            return appstats
+                return appstats
             appstats[model.__name__] = count
-            return
         return appstats
 
     def model(self, appname, modelname):
@@ -147,10 +144,13 @@ class Inspector(UserInspector, Err):
             cl = field.__class__.__name__
             rels = ["OneToOneField", "ManyToOneRel", "ManyToManyRel"]
             if cl in rels:
-                relfield = field.get_related_field()
-                rel = {"field": str(field.field), "relfield": str(
-                    relfield), "related_name": field.related_name, "type": cl}
-                relations.append(rel)
+                try:
+                    relfield = field.get_related_field()
+                    rel = {"field": str(field.field), "relfield": str(
+                        relfield), "related_name": field.related_name, "type": cl}
+                    relations.append(rel)
+                except Exception as e:
+                    self.err(e)
             else:
                 fobj = {"name": field.name, "class": ftype, "related": None}
                 relfields = ["OneToOneField", "ForeignKey", "ManyToManyField"]
