@@ -1,3 +1,2 @@
+recursive-include introspection/inspector *
 recursive-include introspection/management *
-recursive-include introspection/migrations *
-recursive-include introspection/terminal *

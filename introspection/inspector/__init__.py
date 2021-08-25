@@ -1,46 +1,35 @@
-from __future__ import print_function
-from django.db.models import Q
-from django.conf import settings
+# pylint: disable=no-member
+from typing import Iterator, List, Type, Union
+
 from django.apps import apps as APPS
-from django.utils.html import strip_tags
+from django.apps.config import AppConfig
+from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
-from goerr import Err, colors
+from django.db.models import Model, Q
+from django.db.models.query import QuerySet
+from django.utils.html import strip_tags
+
+from ..colors import colors
 from .users import UserInspector
-TERM = "term" in settings.INSTALLED_APPS
-if TERM:
-    from term.commands import rprint as RPRINT
 
 
-class Inspector(UserInspector, Err):
+class Inspector(UserInspector):
     allowed_apps = []
     appnames = []
 
     def __init__(self):
         self.allowed_apps = self.apps()
 
-    def scanapp(self, path=None, term=False):
-        global TERM
-        global RPRINT
-        rprint = prints
-        if term is True:
-            if TERM is True:
-                rprint = RPRINT
-            else:
-                self.err("Terminal is not installed: can not remote print")
-                return
+    def scanapp(self, path: Union[str, None] = None) -> None:
         if path is None:
-            return "A path is required: ex: auth.User"
+            raise AttributeError("A path is required: ex: auth.User")
         has_model = "." in path
         if has_model is False:
             appname = path
             stats = self.app(appname)
             for modelname in stats:
-                if TERM is False:
-                    msg = colors.bold(str(stats[modelname]))
-                else:
-                    msg = "<b>" + str(stats[modelname]) + "</b>"
-                rprint("<b>" + modelname + "</b>", ": found",
-                       msg + " instances")
+                msg = colors.bold(str(stats[modelname]))
+                print(modelname, ": found", msg + " instances")
             return
         else:
             path = path
@@ -49,55 +38,42 @@ class Inspector(UserInspector, Err):
             modelname = s[1]
             infos = self.model(appname, modelname)
             title("Fields")
-            if TERM is False:
-                rprint("# Found", colors.bold(
-                    str(len(infos["fields"])) + " fields:"))
-            else:
-                rprint("# Found<b>", str(
-                    len(infos["fields"])) + "</b> fields:")
+            print("# Found", colors.bold(str(len(infos["fields"])) + " fields:"))
             for field in infos["fields"]:
-                if TERM is True:
-                    name = "<b>" + field["name"] + "</b>"
-                else:
-                    name = colors.green(field["name"])
+                name = colors.green(field["name"])
                 ftype = field["class"]
                 rel = field["related"]
                 msg = name + " " + ftype
                 if rel is not None:
                     msg = msg + " with related name " + rel
-                rprint(msg)
+                print(msg)
             numrels = len(infos["relations"])
             if numrels > 0:
                 relstr = "relations"
                 if numrels == 1:
                     relstr = "relation"
                 title("Relations")
-                if TERM is False:
-                    rprint("# Found", colors.bold(str(len(infos["relations"])) + 
-                                                  " external " + relstr), ":")
-                else:
-                    rprint("# Found<b>",
-                           str(infos["count"]) + "</b> instances of " + modelname)
+                print(
+                    "# Found",
+                    colors.bold(str(len(infos["relations"])) + " external " + relstr),
+                    ":",
+                )
                 for rel in infos["relations"]:
-                    if TERM is True:
-                        name = "<b>" + rel["field"] + "</b>"
-                    else:
-                        name = colors.green(rel["field"])
+                    name = colors.green(rel["field"])
                     relname = rel["related_name"]
                     relfield = rel["relfield"]
                     relstr = ""
                     if relname is not None:
                         relstr = "with related name " + colors.green(relname)
-                    rprint(name, "from", relfield, rel["type"], relstr)
+                    print(name, "from", relfield, rel["type"], relstr)
             title("Instances")
-            if TERM is False:
-                rprint("# Found", colors.bold(
-                    str(infos["count"]) + " instances of " + modelname))
-            else:
-                rprint("# Found <b>" + str(numrels) + "</b> relations")
+            print(
+                "# Found",
+                colors.bold(str(infos["count"]) + " instances of " + modelname),
+            )
 
-    def apps(self):
-        apps = []
+    def apps(self) -> List[AppConfig]:
+        apps: List[AppConfig] = []
         self.appnames = []
         for appname in settings.INSTALLED_APPS:
             appname = self._convert_appname(appname)
@@ -106,8 +82,8 @@ class Inspector(UserInspector, Err):
             apps.append(app)
         return apps
 
-    def app_names(self):
-        apps = []
+    def app_names(self) -> List[str]:
+        apps: List[str] = []
         self.appnames = []
         for appname in settings.INSTALLED_APPS:
             appname = self._convert_appname(appname)
@@ -115,24 +91,24 @@ class Inspector(UserInspector, Err):
             apps.append(self._convert_appname(appname))
         return apps
 
-    def app(self, appname):
+    def app(self, appname: str) -> dict:
         appstats = {}
         try:
             models = self._models(appname)
         except Exception as e:
-            self.err("Can not get models for app " + appname, self.app, e)
-            return appstats
+            raise Exception("Can not get models for app " + appname, self.app, e)
         for model in models:
             try:
                 count = self._count_model(model)
             except Exception as e:
-                self.err("Can not count model", e)
-                return appstats
+                raise Exception("Can not count model", e)
             appstats[model.__name__] = count
         return appstats
 
-    def model(self, appname, modelname):
+    def model(self, appname: str, modelname: str):
         model = self._get_model(appname, modelname)
+        if model is None:
+            raise Exception(f"Model {modelname} not found")
         count = self._count_model(model)
         info = {}
         info["count"] = count
@@ -145,31 +121,38 @@ class Inspector(UserInspector, Err):
             rels = ["OneToOneField", "ManyToOneRel", "ManyToManyRel"]
             if cl in rels:
                 try:
-                    relfield = field.get_related_field()
-                    rel = {"field": str(field.field), "relfield": str(
-                        relfield), "related_name": field.related_name, "type": cl}
+                    relfield = field.get_related_field()  # type: ignore
+                    rel = {
+                        "field": str(field.field),  # type: ignore
+                        "relfield": str(relfield),
+                        "related_name": field.related_name,  # type: ignore
+                        "type": cl,
+                    }
                     relations.append(rel)
                 except Exception as e:
-                    self.err(e)
+                    raise e
             else:
                 fobj = {"name": field.name, "class": ftype, "related": None}
                 relfields = ["OneToOneField", "ForeignKey", "ManyToManyField"]
                 if ftype in relfields:
                     relstr = str(field.remote_field.name)
                     fobj["related"] = relstr
+                    fobj[
+                        "related_class"
+                    ] = field.related_model().__class__.__name__  # type: ignore
                 fields.append(fobj)
         info["fields"] = fields
         info["relations"] = relations
         return info
 
-    def models(self, appname):
+    def models(self, appname: str) -> Iterator[Type[Model]]:
         try:
             models = self._models(appname)
         except Exception as e:
-            self.err("Can not get models", e)
+            raise Exception("Can not get models", e)
         return models
 
-    def has_m2m(self, model):
+    def has_m2m(self, model: Type[Model]) -> bool:
         ftypes = model._meta.get_fields(include_parents=False)
         for field in ftypes:
             if isinstance(field, GenericForeignKey):
@@ -178,7 +161,7 @@ class Inspector(UserInspector, Err):
                 return True
         return False
 
-    def field_type(self, model, fieldname):
+    def field_type(self, model: Type[Model], fieldname: str) -> Union[str, None]:
         ftypes = model._meta.get_fields(include_parents=False)
         ftype = None
         for field in ftypes:
@@ -186,11 +169,13 @@ class Inspector(UserInspector, Err):
                 ftype = field.get_internal_type()
         return ftype
 
-    def count(self, jsonq, operator="and"):
-        q = self.query(jsonq, operator, count=True)
-        return q
+    # def count(self, jsonq, operator="and") -> int:
+    #    q = self.query(jsonq, operator, count=True)
+    #    return int(q)
 
-    def query(self, jsonq, operator="and", count=False):
+    def query(
+        self, jsonq: dict, operator: str = "and", count: bool = False
+    ) -> QuerySet:
         """
         returns a Django orm query from json input:
         {
@@ -205,18 +190,19 @@ class Inspector(UserInspector, Err):
         fdict = jsonq["filters"]
         filters = []
         try:
-            q = model.objects.none()
+            q = model.objects.none()  # type: ignore
         except Exception as e:
-            self.err(e)
+            raise e
         for label in fdict:
             kwargs = {label: fdict[label]}
             filters.append(Q(**kwargs))
+        q: QuerySet
         if filters == []:
             try:
-                q = model.objects.all()
+                q = model.objects.all()  # type: ignore
                 return q
             except Exception as e:
-                self.err(e)
+                raise e
         else:
             fq = Q()
             for f in filters:
@@ -226,43 +212,40 @@ class Inspector(UserInspector, Err):
                     fq = fq | f
             if count is False:
                 try:
-                    q = model.objects.filter(fq)
+                    q = model.objects.filter(fq)  # type: ignore
                 except Exception as e:
-                    self.err(e)
+                    raise e
             else:
                 try:
-                    q = model.objects.filter(fq).count()
+                    q = model.objects.filter(fq).count()  # type: ignore
                 except Exception as e:
-                    self.err(e)
-        return q
+                    raise e
+        return q  # pyright: reportUnboundVariable=false
 
-    def _models(self, appname):
+    def _models(self, appname) -> Iterator[Type[Model]]:
         """
         return models_array
         """
         try:
             app = self._get_app(appname)
         except Exception as e:
-            self.err("Can not get app " + appname, e)
-            return
+            raise Exception(f"Can not get app {appname} {e}")
         if appname not in self.appnames:
-            self.err("App " + appname + " not found in settings")
-            return
-        models = self._get_models(app)
+            raise Exception("App " + appname + " not found in settings")
+        models = app.get_models()
         return models
 
-    def _get_app(self, appname):
+    def _get_app(self, appname) -> AppConfig:
         """
         returns app object or None
         """
         try:
             app = APPS.get_app_config(appname)
         except Exception as e:
-            self.err(e)
-            return
+            raise e
         return app
 
-    def _get_model(self, appname, modelname):
+    def _get_model(self, appname, modelname) -> Union[Type[Model], None]:
         """
         return model or None
         """
@@ -273,34 +256,19 @@ class Inspector(UserInspector, Err):
             if mod.__name__ == modelname:
                 model = mod
                 return model
-        msg = "Model " + modelname + " not found"
+        # msg = "Model " + modelname + " not found"
 
-    def _get_models(self, app):
-        """
-        return models_array
-        """
-        try:
-            app_models = app.get_models()
-            appmods = []
-            for model in app_models:
-                appmods.append(model)
-        except Exception as e:
-            self.err(e)
-            return
-        return appmods
-
-    def _count_model(self, model):
+    def _count_model(self, model) -> int:
         """
         return model count
         """
         try:
             res = model.objects.all().count()
         except Exception as e:
-            self.err(e)
-            return
+            raise e
         return res
 
-    def _convert_appname(self, appname):
+    def _convert_appname(self, appname: str) -> str:
         name = appname
         if "." in appname:
             name = appname.split(".")[-1]
@@ -316,7 +284,7 @@ def title(name):
     print("========================================================")
 
 
-def prints(*args):
+def print(*args):
     msg = ""
     for arg in args:
         msg += strip_tags(arg) + " "

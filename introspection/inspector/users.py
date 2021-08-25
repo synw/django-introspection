@@ -1,34 +1,37 @@
+from typing import List, Tuple
+from datetime import datetime
+
 from django.contrib.auth.models import Permission, User
-from goerr import Err
 
 
-class UserInspector(Err):
-
-    def get_user(self, username):
-        user = None
+class UserInspector:
+    def get_user(self, username: str) -> User:
+        user: User
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist as e:
-            self.err(e, "Can not find user " + username, e)
+            raise User.DoesNotExist(f"Can not find user {username} {e}")
         return user
 
-    def user_info(self, username):
+    def user_info(self, username: str) -> Tuple[bool, bool, bool, datetime]:
         try:
             user = self.get_user(username)
         except Exception as e:
-            self.err("Can not retrieve user, aborting", e)
-            return None
+            raise Exception("Can not retrieve user, aborting", e)
         sup = user.is_superuser
         staff = user.is_staff
         active = user.is_active
         date_joined = user.date_joined
         return sup, staff, active, date_joined
 
-    def user_perms(self, username):
-        user_perms = []
-        group_perms = []
-        app_perms = []
-        apps = self.app_names()
+    def user_perms(
+        self,
+        username: str,
+        app_names: List[str],
+    ) -> Tuple[List[str], List[str], List[str]]:
+        user_perms: List[str] = []
+        group_perms: List[str] = []
+        app_perms: List[str] = []
         user = self.get_user(username)
         if user.is_superuser:
             perms = Permission.objects.all()
@@ -46,7 +49,7 @@ class UserInspector(Err):
             for perm in perms:
                 group_perms.append(perm.name)
         # Modules perms
-        for app in apps:
+        for app in app_names:
             appname = app.split(".")[-1]
             if user.has_module_perms(appname):
                 app_perms.append(appname)
