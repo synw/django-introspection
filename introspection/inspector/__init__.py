@@ -7,7 +7,6 @@ from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db.models import Model, Q
 from django.db.models.query import QuerySet
-from django.utils.html import strip_tags
 
 from ..colors import colors
 from .users import UserInspector
@@ -282,10 +281,3 @@ def title(name):
     print("========================================================")
     print("                     " + name)
     print("========================================================")
-
-
-def print(*args):
-    msg = ""
-    for arg in args:
-        msg += strip_tags(arg) + " "
-    print(msg)
