@@ -22,7 +22,7 @@ setup(
     download_url="https://github.com/synw/django-introspection/releases/tag/" + version,
     keywords=["django"],
     classifiers=[
-        "Development Status :: 2 - Beta",
+        "Development Status :: 4 - Beta",
         "Framework :: Django :: 3.0",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
