@@ -13,7 +13,7 @@ Introspection tools for Django
    
    app = AppInspector("myapp_name")
    # get a list of app's models':
-   inspect.get_models()
+   app.get_models()
    print(app.models)
    # get a list of fields for a model
    fields = app.models[0].fields
