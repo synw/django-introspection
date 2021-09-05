@@ -9,20 +9,15 @@ Introspection tools for Django
 ## Usage
 
    ```python
-   from introspection.inspector import inspect
+   from introspection import AppInspector
    
-   # get a list of apps objects:
-   apps = inspect.apps()
-   # get a list of apps names:
-   apps = inspect.app_names()
-   # get a list of models objects:
-   models = inspect.models("auth")
-   
-   # get info about an app:
-   app_info = inspect.app("auth")
-   
-   # get info about a model:
-   model_info = inspect.model("auth", "User")
+   app = AppInspector("myapp_name")
+   # get a list of app's models':
+   inspect.get_models()
+   print(app.models)
+   # get a list of fields for a model
+   fields = app.models[0].fields
+   print(fields)
    ```
 
 ## Management command
