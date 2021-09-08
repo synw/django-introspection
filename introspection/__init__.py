@@ -3,4 +3,4 @@
 from .inspector.inspector import AppInspector
 from .model import ModelFieldRepresentation, ModelRepresentation
 
-__version__ = "0.5.2"
+__version__ = "0.6.0"
