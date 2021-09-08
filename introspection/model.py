@@ -38,7 +38,7 @@ class ModelFieldRepresentation:
         return s + ">"
 
     @property
-    def is_relation(self):
+    def is_relation(self) -> bool:
         """
         Check if the field is a relation
         """

@@ -8,10 +8,12 @@ RELATIONS_FIELDS = [
 ]
 
 NUMBER_FIELDS = [
+    "BigAutoField",
     "AutoField",
     "IntegerField",
     "DecimalField",
     "PositiveIntegerField",
+    "FloatField",
 ]
 
 STRING_FIELDS = ["DateTimeField", "FileField", "CharField", "TextField", "SlugField"]
