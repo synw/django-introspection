@@ -29,7 +29,7 @@ class AppInspector:
         if app_config is not None:
             self.app_config = app_config
             return
-        raise ModuleNotFoundError(f"App {app_config} was not found in settings")
+        raise ModuleNotFoundError(f"App {name} was not found in settings")
 
     @property
     def name(self) -> str:
