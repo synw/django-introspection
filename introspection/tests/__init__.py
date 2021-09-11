@@ -1,0 +1,2 @@
+class IntrospectionTest:
+    pass
