@@ -4,15 +4,16 @@ settings.py
 .project
 .pydevproject
 .settings
-
+django_introspection.egg-info
 __pycache__/
 *.py[cod]
-
+coverage_html_report
 # C extensions
 *.so
 
 # Distribution / packaging
 .Python
+/bin
 env/
 build/
 develop-eggs/
@@ -28,6 +29,7 @@ var/
 *.egg-info/
 .installed.cfg
 *.egg
+pyvenv.cfg
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
