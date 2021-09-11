@@ -9,4 +9,4 @@ def title(name: str) -> None:
 
 
 def subtitle(name: str) -> None:
-    print(f"-------------- {name} -------------- ")
+    print(f"-------------- {name} --------------")

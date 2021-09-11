@@ -17,14 +17,14 @@ class Command(BaseCommand):
         """
         c = model.count()
         title(f"{model.name} ({c})")
-        model.print_fields_info()
+        print(model.fields_info())
 
     def inspect_model_relations(self, model: ModelRepresentation) -> None:
         """
         Print model relations info
         """
         subtitle("Relations")
-        for field in model.fields:
+        for field in model.fields.values():
             if field.is_relation is True:
                 try:
                     relfield = field._raw_field.remote_field.name  # type: ignore

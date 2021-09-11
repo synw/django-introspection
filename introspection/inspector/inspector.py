@@ -15,14 +15,12 @@ class AppInspector:
     app_config: AppConfig
     models: List[ModelRepresentation] = []
 
-    def __init__(self, name: str):
+    def __init__(self, name: str) -> None:
         """
         Create an instance from an app name
         """
         app_config: Union[AppConfig, None] = None
         for appname in settings.INSTALLED_APPS:
-            appname = self._convert_appname(appname)
-            # print(appname, name)
             if appname == name:
                 app_config = APPS.get_app_config(appname)
                 break
@@ -46,11 +44,11 @@ class AppInspector:
         for model in models_type:
             self.models.append(ModelRepresentation.from_model_type(model))
 
-    def _convert_appname(self, appname: str) -> str:
-        """
+    """def _convert_appname(self, appname: str) -> str:
+        ""
         Remove the dots from an app name
-        """
+        ""
         name = appname
         if "." in appname:
             name = appname.split(".")[-1]
-        return name
+        return name"""

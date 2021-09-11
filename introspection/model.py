@@ -1,4 +1,4 @@
-from __future__ import annotations
+# from __future__ import annotations
 from typing import Dict, List, Optional, Type, Union
 
 from django.apps import apps as APPS
@@ -49,12 +49,7 @@ class ModelFieldRepresentation:
         """
         Check if a field is blank
         """
-        try:
-            if self._raw_field.blank is True:  # type: ignore
-                return True
-        except KeyError:
-            pass
-        return False
+        return self._raw_field.blank  # type: ignore
 
     @property
     def is_null(self) -> bool:
@@ -73,9 +68,10 @@ class ModelFieldRepresentation:
             "related_name": self.related_class_name,
         }
 
-    def print_info(self) -> None:
+    @property
+    def info(self) -> str:
         """
-        Print the field's info
+        Get the field's info
         """
         name = colors.green(self.name)
         ftype = self.classname
@@ -86,7 +82,7 @@ class ModelFieldRepresentation:
             msg += " null"
         if self.is_relation is True:
             msg = msg + " with related name " + self.related_class_name
-        print(msg)
+        return msg
 
     def _get_related_name(self) -> None:
         if self.classname in RELATIONS_FIELDS:
@@ -102,7 +98,7 @@ class ModelRepresentation:
     """
 
     name: str
-    fields: List[ModelFieldRepresentation] = []
+    fields: Dict[str, ModelFieldRepresentation] = {}
     fks: Dict[str, ModelFieldRepresentation] = {}
     _model_type: Type[Model]
 
@@ -130,38 +126,32 @@ class ModelRepresentation:
         return "<" + self.name + ">"
 
     @staticmethod
-    def from_model_type(model_type: Type[Model]) -> ModelRepresentation:
+    def from_model_type(model_type: Type[Model]) -> "ModelRepresentation":
         """
         Create a model representation from a Model type
         """
         return ModelRepresentation(model_type=model_type)
 
-    @property
-    def path(self) -> str:
-        """
-        Get the model's full python path
-        """
-        msg = str(self.__class__.__module__)
-        msg += "." + str(self.__class__.__qualname__)
-        return msg
-
     def count(self) -> int:
         """
         Return a models instances count
         """
-        try:
-            res = self._model_type.objects.all().count()
-        except Exception as e:
-            raise e
-        return res
+        return self._model_type.objects.all().count()
 
-    def print_fields_info(self) -> None:
+    def fields_info_buffer(self) -> List[str]:
         """
-        Print the model's fields infos
+        Get the model's fields infos's string buffer
         """
-        print(f"# {len(self.fields)} fields")
-        for field in self.fields:
-            field.print_info()
+        buf: List[str] = [f"# {len(self.fields)} fields"]
+        for field in self.fields.values():
+            buf.append(field.info)
+        return buf
+
+    def fields_info(self) -> str:
+        """
+        Print the model's fields infos string
+        """
+        return "\n".join(self.fields_info_buffer())
 
     def _get(self, app_name: str, model_name: str) -> Type[Model]:
         """
@@ -178,7 +168,7 @@ class ModelRepresentation:
             if mod.__name__ == model_name:
                 model = mod
         if model is None:
-            raise Exception(f"Model {model_name} not found for app {app_name}")
+            raise LookupError(f"Model {model_name} not found for app {app_name}")
         return model
 
     def _get_fields(self) -> None:
@@ -188,8 +178,9 @@ class ModelRepresentation:
         fs: List[Union[Field, ForeignObjectRel]] = self._model_type._meta.get_fields(
             include_parents=False
         )
-        self.fields = []
+        self.fields = {}
         for field in fs:
             cl = field.__class__.__name__
             if cl not in RELATIONS:
-                self.fields.append(ModelFieldRepresentation(field))
+                f = ModelFieldRepresentation(field)
+                self.fields[f.name] = f
