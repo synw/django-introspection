@@ -66,3 +66,12 @@ polls.Vote.user from auth.User.id ManyToOneRel
 ========================================================
 # Found 558 instances of User
    ```
+
+## Run the tests
+
+Clone then cd in the django-introspection directory and run:
+
+```
+make install
+make tests
+```
