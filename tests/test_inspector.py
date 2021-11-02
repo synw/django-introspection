@@ -43,5 +43,5 @@ class IntrospectionTestInspector(IntrospectionBaseTest):
 
     def test_model_field_representation(self):
         model = ModelRepresentation("testapp", model_name="Trade")
-        d: Dict[str, str] = {"name": "id", "class": "BigAutoField", "related_name": ""}
+        d: Dict[str, str] = {"name": "id", "class": "AutoField", "related_name": ""}
         self.assertDictEqual(model.fields["id"].to_dict(), d)
