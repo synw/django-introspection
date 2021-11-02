@@ -52,6 +52,7 @@ htmlcov/
 nosetests.xml
 coverage.xml
 *,cover
+.pytest_cache/
 
 # Django stuff:
 *.log
