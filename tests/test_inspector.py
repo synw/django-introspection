@@ -3,7 +3,7 @@ from .base import IntrospectionBaseTest
 from unittest.mock import patch
 from introspection import AppInspector, ModelRepresentation
 
-from introspection.tests.testapp.models import Market
+from tests.testapp.models import Market
 
 
 class IntrospectionTestInspector(IntrospectionBaseTest):

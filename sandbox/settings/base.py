@@ -149,6 +149,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.forms",
     "introspection",
+    "tests.testapp",
 ]
 
 LOGIN_REDIRECT_URL = "/"
