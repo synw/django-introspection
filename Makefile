@@ -26,7 +26,6 @@ help:
 	@echo "  run                 -- to run Django development server"
 	@echo "  migrate             -- to apply demo database migrations"
 	@echo "  migrations          -- to create new migrations for application after changes"
-	@echo "  superuser           -- to create a superuser for Django admin"
 	@echo
 	@echo "  flake               -- to launch Flake8 checking"
 	@echo "  test                -- to launch base test suite using Pytest"
@@ -106,14 +105,6 @@ migrate:
 	$(DJANGO_MANAGE) migrate
 .PHONY: migrate
 
-superuser:
-	@echo ""
-	@echo "==== Create new superuser ===="
-	@echo ""
-	@DJANGO_SECRET_KEY=$(DEMO_DJANGO_SECRET_KEY) \
-	$(DJANGO_MANAGE) createsuperuser
-.PHONY: superuser
-
 run:
 	@echo ""
 	@echo "==== Running development server ===="
@@ -159,6 +150,7 @@ build-package:
 	@echo ""
 	rm -Rf dist
 	$(VENV_PATH)/bin/python setup.py sdist
+	$(VENV_PATH)/bin/python setup.py bdist_wheel
 .PHONY: build-package
 
 release: build-package
