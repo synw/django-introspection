@@ -45,15 +45,15 @@ pip-log.txt
 pip-delete-this-directory.txt
 
 # Unit test / coverage reports
-htmlcov/
-.tox/
+htmlcov
+.tox
 .coverage
 .coverage.*
 .cache
 nosetests.xml
 coverage.xml
 *,cover
-.pytest_cache/
+.pytest_cache
 
 # Django stuff:
 *.log
