@@ -25,7 +25,7 @@ class ModelFieldRepresentation:
         """
         Initialize from a Django field
         """
-        self.name = field.name
+        self.name = field.name  # type: ignore
         self._raw_field = field
         self.classname = field.get_internal_type()
         self._get_related_name()
@@ -55,7 +55,7 @@ class ModelFieldRepresentation:
         """
         Check if a field is null
         """
-        return self._raw_field.null
+        return self._raw_field.null  # type: ignore
 
     def to_dict(self) -> Dict[str, str]:
         """
@@ -135,7 +135,7 @@ class ModelRepresentation:
         """
         Return a models instances count
         """
-        return self._model_type.objects.all().count()
+        return self._model_type.objects.all().count()  # type: ignore
 
     def fields_info_buffer(self) -> List[str]:
         """
@@ -158,14 +158,14 @@ class ModelRepresentation:
         """
         app: AppConfig
         try:
-            app = APPS.get_app_config(app_name)
+            app = APPS.get_app_config(app_name)  # type: ignore
         except LookupError as e:
             raise e
-        models = app.get_models()
+        models = app.get_models()  # type: ignore
         model = None
-        for mod in models:
+        for mod in models:  # type: ignore
             if mod.__name__ == model_name:
-                model = mod
+                model = mod  # type: ignore
         if model is None:
             raise LookupError(f"Model {model_name} not found for app {app_name}")
         return model
@@ -176,7 +176,9 @@ class ModelRepresentation:
         """
         fs: List[  # type: ignore
             Union[Field, ForeignObjectRel]
-        ] = self._model_type._meta.get_fields(include_parents=False)
+        ] = self._model_type._meta.get_fields(  # type: ignore
+            include_parents=False
+        )
         self.fields = {}
         for field in fs:  # type: ignore
             cl = field.__class__.__name__
