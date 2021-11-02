@@ -8,7 +8,7 @@ from introspection.colors import colors
 
 class IntrospectionTestConf(IntrospectionBaseTest):
     @patch("builtins.print")
-    def test_titles(self, mock_print):
+    def test_titles(self, mock_print):  # type: ignore
         lines: List[str] = ["========================================================"]
         lines.append("                     text                     ")
         lines.append("========================================================")
