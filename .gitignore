@@ -8,6 +8,8 @@ django_introspection.egg-info
 __pycache__/
 *.py[cod]
 coverage_html_report
+.vscode
+
 # C extensions
 *.so
 
