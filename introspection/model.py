@@ -1,4 +1,3 @@
-# from __future__ import annotations
 from typing import Dict, List, Optional, Type, Union
 
 from django.apps import apps as APPS
@@ -22,7 +21,7 @@ class ModelFieldRepresentation:
     related_class_name: str = ""
     _raw_field: Union[Field, ForeignObjectRel]
 
-    def __init__(self, field: Union[Field, ForeignObjectRel]) -> None:
+    def __init__(self, field: Union[Field, ForeignObjectRel]) -> None:  # type: ignore
         """
         Initialize from a Django field
         """
@@ -175,11 +174,11 @@ class ModelRepresentation:
         """
         Set the model fields list representation
         """
-        fs: List[Union[Field, ForeignObjectRel]] = self._model_type._meta.get_fields(
-            include_parents=False
-        )
+        fs: List[  # type: ignore
+            Union[Field, ForeignObjectRel]
+        ] = self._model_type._meta.get_fields(include_parents=False)
         self.fields = {}
-        for field in fs:
+        for field in fs:  # type: ignore
             cl = field.__class__.__name__
             if cl not in RELATIONS:
                 f = ModelFieldRepresentation(field)

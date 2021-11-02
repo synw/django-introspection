@@ -3,7 +3,7 @@ from .base import IntrospectionBaseTest
 from unittest.mock import patch
 from introspection import AppInspector, ModelRepresentation
 
-from testapp.models import Market
+from introspection.tests.testapp.models import Market
 
 
 class IntrospectionTestInspector(IntrospectionBaseTest):
@@ -36,7 +36,7 @@ class IntrospectionTestInspector(IntrospectionBaseTest):
             model._get("testapp", "unknown_model")
 
     @patch("builtins.print")
-    def test_titles(self, mock_print):
+    def test_titles(self, mock_print):  # type: ignore
         model = ModelRepresentation("testapp", model_name="Market")
         info = model.fields_info()
         print(info)

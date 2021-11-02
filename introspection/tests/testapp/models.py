@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 from django.db import models
 
 SIDE = [("buy", "buy"), ("sell", "sell")]

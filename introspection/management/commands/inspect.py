@@ -39,11 +39,11 @@ class Command(BaseCommand):
                         f"No related field for {field} of type {type(field._raw_field)}"
                     )
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser):  # type: ignore
         parser.add_argument("path", type=str)
 
-    def handle(self, *args, **options):
-        path = options["path"]
+    def handle(self, *args, **options):  # type: ignore
+        path: str = options["path"]
         if path is None:
             raise AttributeError("A path is required: ex: auth.User")
         appname = path
