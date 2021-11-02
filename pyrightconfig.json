@@ -10,8 +10,11 @@
   "reportIncompatibleMethodOverride": "error",
   "reportIncompatibleVariableOverride": "error",
   "reportUninitializedInstanceVariable": "error",
-  "reportUnknownParameterType": false,
-  "reportUnknownVariableType": false,
+  "reportUnknownParameterType": true,
+  "reportUnknownVariableType": true,
   "reportUnnecessaryCast": "warning",
   "reportUnnecessaryComparison": "warning",
+  "include": [
+    "introspection"
+  ]
 }
