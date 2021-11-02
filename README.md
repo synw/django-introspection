@@ -73,5 +73,5 @@ Clone then cd in the django-introspection directory and run:
 
 ```
 make install
-make tests
+make test-initial
 ```
