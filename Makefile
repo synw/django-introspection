@@ -148,6 +148,7 @@ build-package:
 	@echo ""
 	@echo "==== Build package ===="
 	@echo ""
+	rm -rf build *.egg-info
 	rm -Rf dist
 	$(VENV_PATH)/bin/python setup.py sdist
 .PHONY: build-package
