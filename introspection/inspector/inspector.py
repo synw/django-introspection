@@ -21,10 +21,6 @@ class AppInspector:
         Create an instance from an app name
         """
         app_config: Union[AppConfig, None] = None
-        """for tmp in APPS.get_app_configs():
-            if tmp.name == name:
-                app_config = tmp
-                break"""
         for appname in settings.INSTALLED_APPS:
             if appname == name:
                 app_config = APPS.get_app_config(appname)  # type: ignore
