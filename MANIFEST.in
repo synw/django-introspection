@@ -1,2 +1,9 @@
+recursive-exclude tests *
+recursive-exclude testapp *
+recursive-exclude sandbox *
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+exclude sphinx_reload.py
+
 recursive-include introspection/inspector *
 recursive-include introspection/management *
