@@ -11,7 +11,7 @@ Introspection tools for Django
    ```python
    from introspection import AppInspector
    
-   app = AppInspector("myapp_name")
+   app = AppInspector("myapp_label") # note you can also use a path: django.contrib.auth
    # get a list of app's models':
    app.get_models()
    print(app.models)
@@ -22,13 +22,16 @@ Introspection tools for Django
 
 ## Management command
 
-Print details about a model or app
+Print details about a model or app:
 
    ```python
    # inspect an app
-   python3 manage.py inspect auth
-   # or for a model
-   python3 manage.py inspect auth.User
+   python3 manage.py inspectapp auth
+   # or python3 manage.py inspectapp django.contrib.auth
+   
+   # for a model
+   python3 manage.py inspectmodel auth.User
+   # or python3 manage.py inspectmodel django.contrib.auth.User
    ```
    
 Output:
