@@ -150,17 +150,16 @@ build-package:
 	@echo ""
 	rm -Rf dist
 	$(VENV_PATH)/bin/python setup.py sdist
-	$(VENV_PATH)/bin/python setup.py bdist_wheel
 .PHONY: build-package
 
-release: build-package
+release:
 	@echo ""
 	@echo "==== Release ===="
 	@echo ""
 	$(TWINE) upload dist/*
 .PHONY: release
 
-check-release: build-package
+check-release:
 	@echo ""
 	@echo "==== Check package ===="
 	@echo ""
