@@ -30,7 +30,7 @@ class IntrospectionTestInspector(IntrospectionBaseTest):
         model = ModelRepresentation("testapp", model_name="Market")
         Market.objects.create(name="Binance")  # type: ignore
         self.assertEqual(model.count(), 1)
-        with self.assertRaises(LookupError):
+        with self.assertRaises(ModuleNotFoundError):
             model._get("unknown_app", "unknown_model")
         with self.assertRaises(LookupError):
             model._get("testapp", "unknown_model")

@@ -1,13 +1,13 @@
 from typing import Dict, List, Optional, Type, Union
-
-from django.apps import apps as APPS
 from django.apps.config import AppConfig
+
 from django.db.models import Model
 from django.db.models.fields import Field
 from django.db.models.fields.reverse_related import ForeignObjectRel
 
 from introspection.colors import colors
-from .const import RELATIONS, RELATIONS_FIELDS
+from introspection.utils import get_app_config
+from introspection.const import RELATIONS, RELATIONS_FIELDS
 
 
 class ModelFieldRepresentation:
@@ -186,7 +186,7 @@ class ModelRepresentation:
         """
         return "\n".join(self.fields_info_buffer())
 
-    def _get(self, app_name: str, model_name: str) -> Type[Model]:
+    def _get(self, app_name_or_label: str, model_name: str) -> Type[Model]:
         """return model type or None
 
         :param app_name: the Django app name
@@ -198,18 +198,21 @@ class ModelRepresentation:
         :return: the app model type. Raises a LookupError if not found
         :rtype: Type[Model]
         """
-        app: AppConfig
+        _app_config: AppConfig
         try:
-            app = APPS.get_app_config(app_name)  # type: ignore
-        except LookupError as e:
+            _app_config = get_app_config(app_name_or_label)
+        except ModuleNotFoundError as e:
             raise e
+        app = _app_config
         models = app.get_models()  # type: ignore
         model = None
         for mod in models:  # type: ignore
             if mod.__name__ == model_name:
                 model = mod  # type: ignore
         if model is None:
-            raise LookupError(f"Model {model_name} not found for app {app_name}")
+            raise LookupError(
+                f"Model {model_name} not found for app {app_name_or_label}"
+            )
         return model
 
     def _get_fields(self) -> None:

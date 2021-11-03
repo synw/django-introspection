@@ -1,11 +1,9 @@
-from typing import Iterator, List, Type, Union
-
-from django.apps import apps as APPS
+from typing import Iterator, List, Type
 from django.apps.config import AppConfig
-from django.conf import settings
 from django.db.models import Model
 
 from introspection.model import ModelRepresentation
+from introspection.utils import get_app_config
 
 
 class AppInspector:
@@ -16,19 +14,16 @@ class AppInspector:
     app_config: AppConfig
     models: List[ModelRepresentation] = []
 
-    def __init__(self, name: str) -> None:
+    def __init__(self, app_name_or_label: str) -> None:
         """
         Create an instance from an app name
         """
-        app_config: Union[AppConfig, None] = None
-        for appname in settings.INSTALLED_APPS:
-            if appname == name:
-                app_config = APPS.get_app_config(appname)  # type: ignore
-                break
-        if app_config is not None:
-            self.app_config = app_config
-            return
-        raise ModuleNotFoundError(f"App {name} was not found in settings")
+        app_config: AppConfig
+        try:
+            app_config = get_app_config(app_name_or_label)
+        except ModuleNotFoundError as e:
+            raise e
+        self.app_config = app_config
 
     @property
     def name(self) -> str:

@@ -2,7 +2,6 @@ from typing import List
 from introspection.model import ModelRepresentation
 from django.core.management.base import BaseCommand
 
-# from introspection.inspector import inspect
 from introspection.inspector.inspector import AppInspector
 from introspection.inspector import title, subtitle
 from introspection.colors import colors
@@ -45,24 +44,15 @@ class Command(BaseCommand):
     def handle(self, *args, **options):  # type: ignore
         path: str = options["path"]
         if path is None:
-            raise AttributeError("A path is required: ex: auth.User")
+            raise AttributeError(
+                "An app path or label is required: ex: django.contrib.auth or auth"
+            )
         appname = path
-        modelname = None
-        if "." in path:
-            p = path.split(".")
-            appname = p[0]
-            modelname = p[-1]
         app = AppInspector(appname)
         model_names: List[ModelRepresentation] = []
-        if modelname is not None:
-            model_names = [ModelRepresentation(app_name=appname, model_name=modelname)]
-        else:
-            app.get_models()
-            model_names = app.models
-        if modelname is None:
-            print(f"App {app.name} models:")
-        else:
-            print(f"Model {model_names[0]}")
+        app.get_models()
+        model_names = app.models
+        print(f"App {app.name} models:")
         for model in model_names:
             self.inspect_model_fields(model)
             self.inspect_model_relations(model)
