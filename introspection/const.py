@@ -16,4 +16,11 @@ NUMBER_FIELDS = [
     "FloatField",
 ]
 
-STRING_FIELDS = ["DateTimeField", "FileField", "CharField", "TextField", "SlugField"]
+STRING_FIELDS = [
+    "DateTimeField",
+    "FileField",
+    "CharField",
+    "TextField",
+    "SlugField",
+    "UUIDField",
+]

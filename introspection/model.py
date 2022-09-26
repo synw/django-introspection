@@ -59,7 +59,9 @@ class ModelFieldRepresentation:
         :return: is the field blank
         :rtype: bool
         """
-        return self._raw_field.blank  # type: ignore
+        if hasattr(self._raw_field, "blank"):
+            return self._raw_field.blank  # type: ignore
+        return False
 
     @property
     def is_null(self) -> bool:
